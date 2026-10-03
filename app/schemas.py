@@ -45,3 +45,24 @@ class OnboardingCompletionSummary(BaseModel):
     completed: int          # sesiones que guardaron sus preferencias
     completion_rate: float  # porcentaje de sesiones completadas
     reached_by_step: list[StepReach]  # muestra en qué paso abandonan los usuarios
+
+
+#cuando Flutter mande el uso de un filtro, espero el nombre del filtro y la pantalla
+class FilterUsageCreate(BaseModel):
+    filter: str
+    screen: str
+
+class FilterUsageOut(BaseModel):
+    id: int
+    filter: str
+    screen: str
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+#Forma de respuesta del resumen
+class FilterUsageSummary(BaseModel):
+    filter: str
+    screen: str
+    count: int  # cuántas veces se usó ese filtro en esa pantalla

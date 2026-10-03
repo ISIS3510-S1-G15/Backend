@@ -19,3 +19,13 @@ class OnboardingEvent(Base):
     event = Column(String, index=True)       # "started", "step" o "completed"
     step = Column(Integer)                   # paso alcanzado (1 a 5)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# TABLA QUE GUARDA CADA USO DE UN FILTRO PARA BQ TYPE 2
+class FilterUsage(Base):
+    __tablename__ = "filter_usages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    filter = Column(String, index=True)     # el filtro que el usuario tocó (ej. "open", "Vegan")
+    screen = Column(String, index=True)     # la pantalla donde lo tocó (ej. "map", "home")
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())

@@ -131,6 +131,52 @@ def export_onboarding_completion(db: Session = Depends(get_db)):
         headers={"Content-Disposition": "attachment; filename=onboarding_completion_report.csv"},
     )
 
+
+
+#cuando alguien haga un POST a /analytics/filter-usage enviando filter y screen, guarda una fila nueva en la tabla
+@router.post("/filter-usage", response_model=schemas.FilterUsageOut)
+def log_filter_usage(payload: schemas.FilterUsageCreate, db: Session = Depends(get_db)):
+    entry = models.FilterUsage(filter=payload.filter, screen=payload.screen)
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+# Type 2 BQ: "Which filters (diet, budget, distance, available time) are most
+# commonly used when searching for a place to eat?"
+def _filter_usage_summary(db: Session):
+    return (
+        db.query(
+            models.FilterUsage.filter,
+            models.FilterUsage.screen,
+            func.count(models.FilterUsage.id).label("count"),
+        )
+        .group_by(models.FilterUsage.filter, models.FilterUsage.screen)
+        .order_by(func.count(models.FilterUsage.id).desc())
+        .all()
+    )
+
+# cuando alguien haga un GET a /analytics/filter-usage, cuenta cuántas veces se usó cada filtro y los ordena de más a menos usado
+@router.get("/filter-usage", response_model=list[schemas.FilterUsageSummary])
+def get_filter_usage(db: Session = Depends(get_db)):
+    return [{"filter": r.filter, "screen": r.screen, "count": r.count} for r in _filter_usage_summary(db)]
+
+# Versión CSV descargable del reporte de uso de filtros
+@router.get("/filter-usage/export")
+def export_filter_usage(db: Session = Depends(get_db)):
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["filter", "screen", "count"])  # header row
+    for r in _filter_usage_summary(db):
+        writer.writerow([r.filter, r.screen, r.count])
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=filter_usage_report.csv"},
+    )
+
     
 # http://127.0.0.1:8000/docs#/analytics/get_search_gaps_analytics_search_gaps_get
 # http://127.0.0.1:8000/docs
