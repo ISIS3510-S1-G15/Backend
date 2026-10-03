@@ -9,3 +9,13 @@ class ZeroResultSearch(Base):
     id = Column(Integer, primary_key=True, index=True)
     query = Column(String, index=True)      # el término que el usuario buscó
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+# TABLA QUE GUARDA LOS EVENTOS DE LA ENCUESTA DE ONBOARDING PARA BQ TYPE 2
+class OnboardingEvent(Base):
+    __tablename__ = "onboarding_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String, index=True)  # identifica un mismo recorrido de la encuesta
+    event = Column(String, index=True)       # "started", "step" o "completed"
+    step = Column(Integer)                   # paso alcanzado (1 a 5)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
