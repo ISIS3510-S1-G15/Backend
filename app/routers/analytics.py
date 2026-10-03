@@ -180,3 +180,80 @@ def export_filter_usage(db: Session = Depends(get_db)):
     
 # http://127.0.0.1:8000/docs#/analytics/get_search_gaps_analytics_search_gaps_get
 # http://127.0.0.1:8000/docs
+
+
+# =====================================================================
+# Type 1 BQ (Juan Felipe Ochoa):
+# "On average, how many times does a user open the app during a
+#  typical academic week?"
+# Solo usuarios autenticados: así una apertura se atribuye a una persona
+# (y no a un celular), y el promedio por usuario es correcto.
+# =====================================================================
+from app.security import get_current_user
+
+MEAL_SLOTS = ["Breakfast", "Mid-morning snack", "Lunch", "Afternoon snack", "Dinner", "Late night"]
+
+
+# La app lo llama al iniciar sesión, al restaurar la sesión y cada vez que vuelve del segundo plano
+@router.post("/app-open", response_model=schemas.AppOpenLogged)
+def log_app_open(
+    payload: schemas.AppOpenCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    db.add(models.AppOpen(user_id=current_user.id, meal_slot=payload.meal_slot))
+    db.commit()
+    return {"saved": True}
+
+
+def _weekly_opens_summary(db: Session) -> dict:
+    # Cuántas aperturas tuvo cada usuario en cada semana del año (semana ISO aproximada con %Y-%W de SQLite)
+    week = func.strftime("%Y-%W", models.AppOpen.timestamp)
+    per_user_week = (
+        db.query(models.AppOpen.user_id, week.label("week"), func.count(models.AppOpen.id).label("opens"))
+        .group_by(models.AppOpen.user_id, week)
+        .all()
+    )
+    total_opens = sum(row.opens for row in per_user_week)
+    user_weeks = len(per_user_week)
+    slot_rows = dict(
+        db.query(models.AppOpen.meal_slot, func.count(models.AppOpen.id))
+        .group_by(models.AppOpen.meal_slot)
+        .all()
+    )
+    return {
+        # Promedio de aperturas por (usuario, semana): la respuesta a la BQ
+        "average_opens_per_user_per_week": round(total_opens / user_weeks, 2) if user_weeks else 0.0,
+        "total_opens": total_opens,
+        "active_users": len({row.user_id for row in per_user_week}),
+        "user_weeks": user_weeks,
+        "opens_by_meal_slot": [{"meal_slot": s, "count": slot_rows.get(s, 0)} for s in MEAL_SLOTS],
+    }
+
+
+@router.get("/app-opens/weekly", response_model=schemas.WeeklyOpensSummary)
+def get_weekly_opens(db: Session = Depends(get_db)):
+    return _weekly_opens_summary(db)
+
+
+# Reporte CSV: una fila por usuario y semana (sin correos ni nombres, solo el id interno)
+@router.get("/app-opens/export")
+def export_app_opens(db: Session = Depends(get_db)):
+    week = func.strftime("%Y-%W", models.AppOpen.timestamp)
+    rows = (
+        db.query(models.AppOpen.user_id, week.label("week"), func.count(models.AppOpen.id).label("opens"))
+        .group_by(models.AppOpen.user_id, week)
+        .order_by(week)
+        .all()
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["user_id", "week", "opens"])
+    for r in rows:
+        writer.writerow([r.user_id, r.week, r.opens])
+    output.seek(0)
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=app_opens_report.csv"},
+    )
