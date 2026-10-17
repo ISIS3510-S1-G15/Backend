@@ -1,6 +1,8 @@
 from typing import Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator 
+import re
 from datetime import datetime
+
 
 #cuando Flutter mande una búsqueda nueva, solo espero que mande un texto llamado query
 class ZeroResultSearchCreate(BaseModel):
@@ -74,6 +76,14 @@ class RegisterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=60)
     email: str = Field(min_length=5, max_length=120)
     password: str = Field(min_length=8, max_length=72)  # bcrypt solo usa los primeros 72 bytes
+
+    # Mínimo una letra, un número y un carácter especial (cualquier cosa que no sea letra, número o espacio)
+    @field_validator("password")
+    @classmethod
+    def password_fuerte(cls, v: str) -> str:
+        if not re.search(r"[A-Za-z]", v) or not re.search(r"\d", v) or not re.search(r"[^A-Za-z0-9\s]", v):
+            raise ValueError("La contraseña necesita al menos una letra, un número y un carácter especial")
+        return v
 
 class LoginRequest(BaseModel):
     email: str
