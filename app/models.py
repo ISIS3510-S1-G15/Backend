@@ -31,6 +31,25 @@ class FilterUsage(Base):
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class OccupancyCheck(Base):
+    __tablename__ = "occupancy_checks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    restaurant_id = Column(String, index=True)
+    screen = Column(String, index=True)
+    action = Column(String, index=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ProfileEdit(Base):
+    __tablename__ = "profile_edits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    install_id = Column(String, index=True)
+    field = Column(String, index=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+
 # ---------- Autenticación + BQ TYPE 1 (Juan Felipe Ochoa) ----------
 from sqlalchemy import ForeignKey
 

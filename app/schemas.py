@@ -71,6 +71,51 @@ class FilterUsageSummary(BaseModel):
     count: int  # cuántas veces se usó ese filtro en esa pantalla
 
 
+class OccupancyCheckCreate(BaseModel):
+    restaurant_id: str = Field(min_length=1, max_length=100)
+    screen: str = Field(min_length=1, max_length=50)
+    action: Literal["checked", "selected"]
+
+
+class OccupancyCheckOut(BaseModel):
+    id: int
+    restaurant_id: str
+    screen: str
+    action: str
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OccupancyCheckSummary(BaseModel):
+    restaurant_id: str
+    checks: int
+    selections: int
+    selection_rate: float
+
+
+class ProfileEditCreate(BaseModel):
+    install_id: str = Field(min_length=1, max_length=100)
+    field: Literal["dietary_restrictions", "cuisine_preferences"]
+
+
+class ProfileEditOut(BaseModel):
+    id: int
+    install_id: str
+    field: str
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ProfileEditSummary(BaseModel):
+    install_id: str
+    edits: int
+    last_edit: datetime
+
+
 # ---------- Autenticación (Juan Felipe Ochoa) ----------
 class RegisterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=60)

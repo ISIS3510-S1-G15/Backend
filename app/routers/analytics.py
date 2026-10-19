@@ -177,6 +177,112 @@ def export_filter_usage(db: Session = Depends(get_db)):
         headers={"Content-Disposition": "attachment; filename=filter_usage_report.csv"},
     )
 
+
+@router.post("/occupancy-check", response_model=schemas.OccupancyCheckOut)
+def log_occupancy_check(payload: schemas.OccupancyCheckCreate, db: Session = Depends(get_db)):
+    entry = models.OccupancyCheck(
+        restaurant_id=payload.restaurant_id, screen=payload.screen, action=payload.action
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+def _occupancy_summary(db: Session):
+    rows = (
+        db.query(
+            models.OccupancyCheck.restaurant_id,
+            models.OccupancyCheck.action,
+            func.count(models.OccupancyCheck.id),
+        )
+        .group_by(models.OccupancyCheck.restaurant_id, models.OccupancyCheck.action)
+        .all()
+    )
+    per_restaurant = {}
+    for restaurant_id, action, total in rows:
+        entry = per_restaurant.setdefault(restaurant_id, {"checked": 0, "selected": 0})
+        entry[action] = total
+    summary = [
+        {
+            "restaurant_id": restaurant_id,
+            "checks": counts["checked"],
+            "selections": counts["selected"],
+            "selection_rate": round(counts["selected"] * 100 / counts["checked"], 1)
+            if counts["checked"]
+            else 0.0,
+        }
+        for restaurant_id, counts in per_restaurant.items()
+    ]
+    return sorted(summary, key=lambda item: item["checks"], reverse=True)
+
+
+@router.get("/occupancy-checks", response_model=list[schemas.OccupancyCheckSummary])
+def get_occupancy_checks(db: Session = Depends(get_db)):
+    return _occupancy_summary(db)
+
+
+@router.get("/occupancy-checks/export")
+def export_occupancy_checks(db: Session = Depends(get_db)):
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["restaurant_id", "checks", "selections", "selection_rate_%"])
+    for r in _occupancy_summary(db):
+        writer.writerow([r["restaurant_id"], r["checks"], r["selections"], r["selection_rate"]])
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=occupancy_checks_report.csv"},
+    )
+
+
+@router.post("/profile-edit", response_model=schemas.ProfileEditOut)
+def log_profile_edit(payload: schemas.ProfileEditCreate, db: Session = Depends(get_db)):
+    entry = models.ProfileEdit(install_id=payload.install_id, field=payload.field)
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+def _profile_edits_summary(db: Session):
+    return (
+        db.query(
+            models.ProfileEdit.install_id,
+            func.count(models.ProfileEdit.id).label("edits"),
+            func.max(models.ProfileEdit.timestamp).label("last_edit"),
+        )
+        .group_by(models.ProfileEdit.install_id)
+        .order_by(func.count(models.ProfileEdit.id).desc())
+        .all()
+    )
+
+
+@router.get("/profile-edits", response_model=list[schemas.ProfileEditSummary])
+def get_profile_edits(db: Session = Depends(get_db)):
+    return [
+        {"install_id": r.install_id, "edits": r.edits, "last_edit": r.last_edit}
+        for r in _profile_edits_summary(db)
+    ]
+
+
+@router.get("/profile-edits/export")
+def export_profile_edits(db: Session = Depends(get_db)):
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["install_id", "edits", "last_edit"])
+    for r in _profile_edits_summary(db):
+        writer.writerow([r.install_id, r.edits, r.last_edit])
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=profile_edits_report.csv"},
+    )
+
     
 # http://127.0.0.1:8000/docs#/analytics/get_search_gaps_analytics_search_gaps_get
 # http://127.0.0.1:8000/docs
