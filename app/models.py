@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -73,4 +73,15 @@ class AppOpen(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
     meal_slot = Column(String)  # contexto de la apertura: Breakfast, Lunch, Dinner, ...
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+
+#BQ type 2: What percentage of users complete the food preferences survey during onboarding?
+class SurveyEvent(Base):
+    __tablename__ = "survey_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    event = Column(String, index=True)       # started, step_viewed, completed, skipped
+    step = Column(Integer, nullable=True)    # número de página (solo para step_viewed)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
