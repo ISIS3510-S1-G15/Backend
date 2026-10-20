@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 from pydantic import BaseModel, Field, field_validator 
 import re
 from datetime import datetime
@@ -125,3 +125,25 @@ class WeeklyOpensSummary(BaseModel):
     active_users: int
     user_weeks: int  # pares (usuario, semana) con al menos una apertura
     opens_by_meal_slot: list[MealSlotCount]  # en qué momento del día abren la app
+    
+#BQ type 2: What percentage of users complete the food preferences survey during onboarding?
+class SurveyEventCreate(BaseModel):
+    event: Literal["started", "step_viewed", "completed", "skipped"]
+    step: Optional[int] = None
+
+class SurveyEventOut(BaseModel):
+    id: int
+    user_id: int
+    event: str
+    step: Optional[int]
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+class SurveyCompletionSummary(BaseModel):
+    started: int
+    completed: int
+    skipped: int
+    completion_rate: float   # porcentaje
+

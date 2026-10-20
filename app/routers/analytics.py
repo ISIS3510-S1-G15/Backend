@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, distinct
 from app.database import get_db
 from app import models, schemas
 import csv
@@ -257,3 +257,47 @@ def export_app_opens(db: Session = Depends(get_db)):
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=app_opens_report.csv"},
     )
+    
+    
+#BQ type 2: What percentage of users complete the food preferences survey during onboarding?
+
+# Cuando Flutter mande un evento de la encuesta, lo guarda con el usuario que tiene la sesión 
+@router.post("/survey-event", response_model=schemas.SurveyEventOut)
+def log_survey_event(
+    payload: schemas.SurveyEventCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    entry = models.SurveyEvent(
+        user_id=current_user.id,
+        event=payload.event,
+        step=payload.step,
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+# Cuántos usuarios distintos tienen al menos un evento de ese tipo (si repite la encuesta cuenta una sola vez)
+def _distinct_users(db: Session, event: str) -> int:
+    return (
+        db.query(func.count(distinct(models.SurveyEvent.user_id)))
+        .filter(models.SurveyEvent.event == event)
+        .scalar()
+    ) or 0
+
+
+# Porcentaje de usuarios que empezaron la encuesta y la completaron respondiendo todas las páginas
+@router.get("/survey-completion", response_model=schemas.SurveyCompletionSummary)
+def get_survey_completion(db: Session = Depends(get_db)):
+    started = _distinct_users(db, "started")
+    completed = _distinct_users(db, "completed")
+    skipped = _distinct_users(db, "skipped")
+    rate = round(completed / started * 100, 1) if started else 0.0
+    return {
+        "started": started,
+        "completed": completed,
+        "skipped": skipped,
+        "completion_rate": rate,
+    }
