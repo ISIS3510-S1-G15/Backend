@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -55,14 +56,17 @@ class AppOpen(Base):
     user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
     meal_slot = Column(String)  # contexto de la apertura: Breakfast, Lunch, Dinner, ...
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
-
-
-#BQ type 2: What percentage of users complete the food preferences survey during onboarding?
-class SurveyEvent(Base):
-    __tablename__ = "survey_events"
+    
+#BQ: ¿qué tan seguido revisan la ocupación antes de decidir ir?
+#Una fila cuando el usuario ve el indicador de ocupación de un restaurante ("occupancy_checked")
+#o toca "Get directions" para ir ("go_decision")
+class OccupancyEvent(Base):
+    __tablename__ = "occupancy_events"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    event = Column(String, index=True)       # started, step_viewed, completed, skipped
-    step = Column(Integer, nullable=True)    # número de página (solo para step_viewed)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    restaurant_id = Column(String, index=True, nullable=False)
+    event = Column(String, index=True, nullable=False)  #"occupancy_checked" o "go_decision"
+    has_data = Column(Boolean, nullable=True)            #solo en "occupancy_checked": ¿había reportes que mostrar?
+    timestamp = Column(DateTime, index=True, nullable=False) 
+

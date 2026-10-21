@@ -125,25 +125,27 @@ class WeeklyOpensSummary(BaseModel):
     active_users: int
     user_weeks: int  # pares (usuario, semana) con al menos una apertura
     opens_by_meal_slot: list[MealSlotCount]  # en qué momento del día abren la app
-    
-#BQ type 2: What percentage of users complete the food preferences survey during onboarding?
-class SurveyEventCreate(BaseModel):
-    event: Literal["started", "step_viewed", "completed", "skipped"]
-    step: Optional[int] = None
 
-class SurveyEventOut(BaseModel):
-    id: int
-    user_id: int
-    event: str
-    step: Optional[int]
-    timestamp: datetime
+# ---------- BQ type 2: ¿qué tan seguido revisan la ocupación antes de decidir ir? ----------
+class OccupancyEventCreate(BaseModel):
+    restaurant_id: str
+    event: Literal["occupancy_checked", "go_decision"]
+    has_data: bool | None = None  # solo para "occupancy_checked"
 
-    class Config:
-        from_attributes = True
+class OccupancyEventLogged(BaseModel):
+    saved: bool
 
-class SurveyCompletionSummary(BaseModel):
-    started: int
-    completed: int
-    skipped: int
-    completion_rate: float   # porcentaje
+class OccupancyCheckByRestaurant(BaseModel):
+    restaurant_id: str
+    checks: int
+    go_decisions: int
+    decisions_after_check: int
 
+class OccupancyCheckSummary(BaseModel):
+    checks: int                       # veces que se vio el indicador de ocupación
+    checks_without_data: int          # de esas, cuántas no tenían reportes que mostrar
+    go_decisions: int                 # veces que tocaron "Get directions"
+    decisions_after_check: int        # decisiones con una revisión del mismo usuario y lugar en los 30 min previos
+    check_before_go_rate: float       # decisions_after_check / go_decisions * 100 (respuesta de la BQ)
+    avg_checks_per_user_per_week: float
+    by_restaurant: list[OccupancyCheckByRestaurant]
