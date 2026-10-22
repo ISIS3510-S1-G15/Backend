@@ -194,3 +194,10 @@ class OccupancyCheckRateSummary(BaseModel):
     check_before_go_rate: float       # decisions_after_check / go_decisions * 100 (respuesta de la BQ)
     avg_checks_per_user_per_week: float
     by_restaurant: list[OccupancyCheckByRestaurant]
+    
+    
+    
+# ---------- APP ----------
+# Restaurantes guardados 
+class SavedRestaurantsOut(BaseModel):
+    restaurant_ids: list[str]  # del más reciente al más antiguo

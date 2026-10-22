@@ -2,6 +2,8 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.sql import func
 from app.database import Base
 
+# ---------- Business Questions ----------
+
 # TABLA QUE GUARDA RESULTADOS NO ENCONTRADOS PARA BQ TYPE 3
 class ZeroResultSearch(Base):
     __tablename__ = "zero_result_searches"
@@ -88,3 +90,12 @@ class OccupancyEvent(Base):
     has_data = Column(Boolean, nullable=True)            #solo en "occupancy_checked": ¿había reportes que mostrar?
     timestamp = Column(DateTime, index=True, nullable=False) 
 
+
+# ---------- APP ----------
+# Restaurantes que cada usuario guardó (botón del detalle). Una fila por par usuario-restaurante
+class SavedRestaurant(Base):
+    __tablename__ = "saved_restaurants"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    restaurant_id = Column(String, primary_key=True)
+    saved_at = Column(DateTime(timezone=True), server_default=func.now())
