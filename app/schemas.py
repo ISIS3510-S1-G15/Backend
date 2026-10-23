@@ -201,3 +201,20 @@ class OccupancyCheckRateSummary(BaseModel):
 # Restaurantes guardados 
 class SavedRestaurantsOut(BaseModel):
     restaurant_ids: list[str]  # del más reciente al más antiguo
+    
+# ---------- Perfil de la encuesta de preferencias ----------
+class ProfileData(BaseModel):
+    name: str = Field(default="", max_length=60)
+    cuisines: list[str] = []
+    dietary_restrictions: list[str] = []
+    meal_frequency: str = ""
+    meal_times: list[str] = []
+    budget: str = ""
+    priorities: list[str] = Field(default=[], max_length=3) 
+    disliked_foods: str = Field(default="", max_length=300)
+
+class ProfileOut(ProfileData):
+    completed: bool  # False si el usuario todavía no ha guardado la encuesta
+
+    class Config:
+        from_attributes = True

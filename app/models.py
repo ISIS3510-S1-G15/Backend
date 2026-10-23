@@ -99,3 +99,20 @@ class SavedRestaurant(Base):
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     restaurant_id = Column(String, primary_key=True)
     saved_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+# Respuestas de la encuesta de preferencias de cada usuario (una fila por usuario).
+from sqlalchemy import JSON
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    name = Column(String, default="")
+    cuisines = Column(JSON, default=list)
+    dietary_restrictions = Column(JSON, default=list)
+    meal_frequency = Column(String, default="")
+    meal_times = Column(JSON, default=list)
+    budget = Column(String, default="")
+    priorities = Column(JSON, default=list)
+    disliked_foods = Column(String, default="")
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
