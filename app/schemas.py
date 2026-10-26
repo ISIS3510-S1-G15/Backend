@@ -116,6 +116,12 @@ class ProfileEditSummary(BaseModel):
     last_edit: datetime
 
 
+class ProfileEditFieldSummary(BaseModel):
+    field: str
+    edits: int
+    installs: int
+
+
 # ---------- Autenticación (Juan Felipe Ochoa) ----------
 class RegisterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=60)

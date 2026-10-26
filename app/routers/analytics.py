@@ -283,6 +283,43 @@ def export_profile_edits(db: Session = Depends(get_db)):
         headers={"Content-Disposition": "attachment; filename=profile_edits_report.csv"},
     )
 
+
+def _profile_edits_by_field(db: Session):
+    return (
+        db.query(
+            models.ProfileEdit.field,
+            func.count(models.ProfileEdit.id).label("edits"),
+            func.count(func.distinct(models.ProfileEdit.install_id)).label("installs"),
+        )
+        .group_by(models.ProfileEdit.field)
+        .order_by(func.count(models.ProfileEdit.id).desc())
+        .all()
+    )
+
+
+@router.get("/profile-edits/by-field", response_model=list[schemas.ProfileEditFieldSummary])
+def get_profile_edits_by_field(db: Session = Depends(get_db)):
+    return [
+        {"field": r.field, "edits": r.edits, "installs": r.installs}
+        for r in _profile_edits_by_field(db)
+    ]
+
+
+@router.get("/profile-edits/by-field/export")
+def export_profile_edits_by_field(db: Session = Depends(get_db)):
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["field", "edits", "installs"])
+    for r in _profile_edits_by_field(db):
+        writer.writerow([r.field, r.edits, r.installs])
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=profile_edits_by_field_report.csv"},
+    )
+
     
 # http://127.0.0.1:8000/docs#/analytics/get_search_gaps_analytics_search_gaps_get
 # http://127.0.0.1:8000/docs
