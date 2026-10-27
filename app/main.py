@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.database import engine, Base
-from app.routers import analytics, auth, occupancy_checks, saved, profile, saved_views
+from app.routers import analytics, auth, occupancy_checks, saved, profile, saved_views, reviews, occupancy
 from fastapi.middleware.cors import CORSMiddleware
 
 Base.metadata.create_all(bind=engine)  # crea las tablas si no existen
@@ -22,6 +22,8 @@ app.include_router(occupancy_checks.router)
 app.include_router(saved.router)
 app.include_router(profile.router)
 app.include_router(saved_views.router)
+app.include_router(reviews.router)
+app.include_router(occupancy.router)
 
 @app.get("/")
 def health_check():

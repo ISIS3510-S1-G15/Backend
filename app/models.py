@@ -127,3 +127,40 @@ class UserProfile(Base):
     priorities = Column(JSON, default=list)
     disliked_foods = Column(String, default="")
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+# ---------- Reseñas y ocupación (Juan Felipe Ochoa) ----------
+# Antes vivían en la app: reseñas en reviews_data.dart (en memoria) y ocupación en SharedPreferences del celular.
+# restaurant_id es texto y sin ForeignKey, igual que en SavedRestaurant, porque la tabla restaurants todavía no existe
+from sqlalchemy import Text, UniqueConstraint
+
+
+# Una reseña por usuario y restaurante: si el usuario vuelve a reseñar, se actualiza la suya
+# (así una sola persona no puede subir o bajar el rating escribiendo muchas reseñas)
+class Review(Base):
+    __tablename__ = "reviews"
+    __table_args__ = (UniqueConstraint("user_id", "restaurant_id", name="uq_review_user_restaurant"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    restaurant_id = Column(String, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    taste = Column(Integer, nullable=False)       # 1 a 5: Taste & Food Quality
+    attention = Column(Integer, nullable=False)   # 1 a 5: Service & Attention
+    price = Column(Integer, nullable=False)       # 1 a 5: Value for Money
+    options = Column(Integer, nullable=False)     # 1 a 5: Dietary Options
+    dietary_options = Column(JSON, default=list)  # dietas que el autor dice que el lugar ofrece
+    comment = Column(Text, default="")
+    # Hora UTC sin zona, puesta desde Python (igual que OccupancyEvent) para poder compararla sin errores
+    created_at = Column(DateTime, index=True, nullable=False)
+
+
+# Un reporte de "qué tan lleno está" (0 vacío, 1 moderado, 2 lleno). Se guardan todos (historial para BQs);
+# al leer solo se usan los recientes y el último de cada usuario
+class OccupancyReport(Base):
+    __tablename__ = "occupancy_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    restaurant_id = Column(String, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    level = Column(Integer, nullable=False)
+    created_at = Column(DateTime, index=True, nullable=False)

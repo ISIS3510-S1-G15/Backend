@@ -247,3 +247,58 @@ class ProfileOut(ProfileData):
 
     class Config:
         from_attributes = True
+
+
+# ---------- Reseñas ----------
+# Lo que manda la app al escribir una reseña. El autor NO viene aquí: sale del token
+class ReviewCreate(BaseModel):
+    taste: int = Field(ge=1, le=5)
+    attention: int = Field(ge=1, le=5)
+    price: int = Field(ge=1, le=5)
+    options: int = Field(ge=1, le=5)
+    dietary_options: list[str] = Field(default=[], max_length=10)
+    comment: str = Field(default="", max_length=300)  # mismo límite que el contador 0/300 de la app
+
+    # Quita espacios sobrantes para no guardar comentarios que son solo espacios
+    @field_validator("comment")
+    @classmethod
+    def strip_comment(cls, v: str) -> str:
+        return v.strip()
+
+
+class ReviewOut(BaseModel):
+    id: int
+    restaurant_id: str
+    author: str               # nombre de la cuenta de quien la escribió
+    created_at: datetime      # con zona UTC, para que la app la convierta a hora local
+    taste: int
+    attention: int
+    price: int
+    options: int
+    dietary_options: list[str]
+    comment: str
+
+
+# Rating de un restaurante: promedio del "overall" de cada reseña (promedio de sus 4 categorías)
+class RatingSummary(BaseModel):
+    restaurant_id: str
+    rating: float | None      # None si todavía no tiene reseñas
+    review_count: int
+
+
+class RestaurantReviewsOut(RatingSummary):
+    reviews: list[ReviewOut]  # más nuevas primero
+
+
+# ---------- Reportes de ocupación ----------
+class OccupancyReportCreate(BaseModel):
+    restaurant_id: str = Field(min_length=1)
+    level: int = Field(ge=0, le=2)  # 0 vacío, 1 moderado, 2 lleno
+
+
+# Estado de ocupación de un restaurante en este momento
+class OccupancyOut(BaseModel):
+    restaurant_id: str
+    level: float | None       # promedio 0-2 de los reportes recientes; None si no hay
+    reports: list[int]        # niveles usados en el promedio (más nuevos primero)
+    last_report_at: datetime | None
