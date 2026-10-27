@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, field_validator
 import re
 from datetime import datetime
 
-
+# ---------- BQ type 3: What categories of food or restaurants do users search for without getting any results? ----------
 #cuando Flutter mande una búsqueda nueva, solo espero que mande un texto llamado query
 class ZeroResultSearchCreate(BaseModel):
     query: str  # lo único que Flutter necesita enviar
@@ -177,7 +177,7 @@ class WeeklyOpensSummary(BaseModel):
     user_weeks: int  # pares (usuario, semana) con al menos una apertura
     opens_by_meal_slot: list[MealSlotCount]  # en qué momento del día abren la app
 
-# ---------- BQ type 2: ¿qué tan seguido revisan la ocupación antes de decidir ir? ----------
+# ---------- BQ type 2: How often do users check or inquire about a restaurant’s occupancy level before deciding to go? ----------
 class OccupancyEventCreate(BaseModel):
     restaurant_id: str
     event: Literal["occupancy_checked", "go_decision"]
@@ -200,6 +200,29 @@ class OccupancyCheckRateSummary(BaseModel):
     check_before_go_rate: float       # decisions_after_check / go_decisions * 100 (respuesta de la BQ)
     avg_checks_per_user_per_week: float
     by_restaurant: list[OccupancyCheckByRestaurant]
+    
+
+# ---------- BQ Type 3: What places are saved as favorites but rarely viewed in detail again? ----------
+class RestaurantViewCreate(BaseModel):
+    restaurant_id: str
+
+class RestaurantViewLogged(BaseModel):
+    saved: bool
+
+class SavedRarelyViewedPlace(BaseModel):
+    restaurant_id: str
+    times_saved: int              # cuántos usuarios lo tienen guardado
+    rarely_viewed: int            # de esos, cuántos lo abrieron max_views veces o menos después de guardarlo
+    rarely_viewed_pct: float      # rarely_viewed / times_saved * 100
+    avg_views_after_saving: float
+
+class SavedRarelyViewedSummary(BaseModel):
+    max_views: int                # "rarely" = esta cantidad de vistas o menos después de guardar
+    min_days_saved: int           # solo cuentan guardados con al menos estos días de antigüedad
+    saves_analyzed: int
+    rarely_viewed: int
+    rarely_viewed_pct: float      # respuesta general de la BQ
+    places: list[SavedRarelyViewedPlace]  # ordenados de más a menos "olvidados"
     
     
     

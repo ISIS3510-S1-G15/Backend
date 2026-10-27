@@ -4,7 +4,7 @@ from app.database import Base
 
 # ---------- Business Questions ----------
 
-# TABLA QUE GUARDA RESULTADOS NO ENCONTRADOS PARA BQ TYPE 3
+# BQ type 3: What categories of food or restaurants do users search for without getting any results?
 class ZeroResultSearch(Base):
     __tablename__ = "zero_result_searches"
 
@@ -77,7 +77,7 @@ class AppOpen(Base):
     meal_slot = Column(String)  # contexto de la apertura: Breakfast, Lunch, Dinner, ...
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
    
-#BQ: ¿qué tan seguido revisan la ocupación antes de decidir ir?
+#BQ type 2: How often do users check or inquire about a restaurant’s occupancy level before deciding to go?
 #Una fila cuando el usuario ve el indicador de ocupación de un restaurante ("occupancy_checked")
 #o toca "Get directions" para ir ("go_decision")
 class OccupancyEvent(Base):
@@ -89,6 +89,17 @@ class OccupancyEvent(Base):
     event = Column(String, index=True, nullable=False)  #"occupancy_checked" o "go_decision"
     has_data = Column(Boolean, nullable=True)            #solo en "occupancy_checked": ¿había reportes que mostrar?
     timestamp = Column(DateTime, index=True, nullable=False) 
+    
+
+# BQ Type 3: What places are saved as favorites but rarely viewed in detail again?
+# Una fila cada vez que un usuario abre el detalle de un restaurante
+class RestaurantView(Base):
+    __tablename__ = "restaurant_views"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    restaurant_id = Column(String, index=True, nullable=False)
+    viewed_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
 
 # ---------- APP ----------
