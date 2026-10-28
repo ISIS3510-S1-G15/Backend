@@ -322,7 +322,39 @@ def export_profile_edits_by_field(db: Session = Depends(get_db)):
         headers={"Content-Disposition": "attachment; filename=profile_edits_by_field_report.csv"},
     )
 
+# BQ Type 5 Tags counters: What are the main tags restaurants have when an user decides to visit it?
+@router.post("/tag-click", response_model=list[schemas.TagClickOut])
+def log_tag_clicks(payload: schemas.TagClickCreate, db: Session = Depends(get_db)):
+    updated_tags = []
     
+    for tag_name in payload.tags:
+        # Buscamos si el tag ya existe en la BD
+        entry = db.query(models.TagClickCounter).filter(models.TagClickCounter.tag == tag_name).first()
+        
+        if entry:
+            # Si existe le sumamos 1
+            entry.count += 1
+        else:
+            # Si no existe se crea empezando en 1
+            entry = models.TagClickCounter(tag=tag_name, count=1)
+            db.add(entry)
+            
+        updated_tags.append(entry)
+        
+    db.commit()
+    
+    # Refrescamos los objetos para devolver los datos actualizados a la app
+    for entry in updated_tags:
+        db.refresh(entry)
+        
+    return updated_tags
+
+# Get para ver la tabla en Swagger
+@router.get("/tag-clicks", response_model=list[schemas.TagClickOut])
+def get_tag_clicks(db: Session = Depends(get_db)):
+    # Trae todos los tags y los ordena de mayor a menor cantidad de clicks
+    return db.query(models.TagClickCounter).order_by(models.TagClickCounter.count.desc()).all()
+
 # http://127.0.0.1:8000/docs#/analytics/get_search_gaps_analytics_search_gaps_get
 # http://127.0.0.1:8000/docs
 

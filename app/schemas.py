@@ -124,6 +124,17 @@ class ProfileEditFieldSummary(BaseModel):
     edits: int
     installs: int
 
+# BQ Type 5 Tags counters: What are the main tags restaurants have when an user decides to visit it?
+class TagClickCreate(BaseModel):
+    # La app enviara la lista de tags (ej. ["Vegan", "Fast Food"])
+    tags: list[str]
+
+class TagClickOut(BaseModel):
+    tag: str
+    count: int
+
+    class Config:
+        from_attributes = True
 
 # ---------- Autenticación (Juan Felipe Ochoa) ----------
 class RegisterRequest(BaseModel):

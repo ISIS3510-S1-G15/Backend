@@ -101,6 +101,15 @@ class RestaurantView(Base):
     restaurant_id = Column(String, index=True, nullable=False)
     viewed_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
+# BQ Type 5: What are the main tags restaurants have when an user decides to visit it?
+# Una fila por tag y se aumenta su contador cada que un usuario decide ir a un restaurante 
+class TagClickCounter(Base):
+    __tablename__ = "tag_click_counters"
+
+    tag = Column(String, primary_key=True, index=True)
+    count = Column(Integer, default=1, nullable=False)
+    last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
 
 # ---------- APP ----------
 # Restaurantes que cada usuario guardó (botón del detalle). Una fila por par usuario-restaurante
