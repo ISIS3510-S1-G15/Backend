@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 import json
 import re
@@ -356,3 +356,55 @@ class SectionEventBatch(BaseModel):
 class SectionEventsAccepted(BaseModel):
     accepted: int
     duplicates: int
+
+
+class MenuItemOut(BaseModel):
+    name: str
+    price: str
+    description: str
+
+
+class MenuSectionOut(BaseModel):
+    category: str
+    items: list[MenuItemOut]
+
+
+class RestaurantOut(BaseModel):
+    id: str
+    name: str
+    location: str
+    category: str
+    image_key: str | None
+    image_url: str | None
+    rating: float
+    review_count: int
+    price: str
+    wait_time: str
+    tags: list[str]
+    hours: str
+    description: str
+    map_x: float
+    map_y: float
+    latitude: float
+    longitude: float
+    menu: list[MenuSectionOut]
+
+    model_config = {"from_attributes": True}
+
+
+class RestaurantListOut(BaseModel):
+    restaurants: list[RestaurantOut]
+
+
+class CatalogOptionOut(BaseModel):
+    value: str
+    label: str
+    detail: str | None
+    emoji: str | None
+    extra: dict[str, Any] | None
+
+    model_config = {"from_attributes": True}
+
+
+class CatalogOut(BaseModel):
+    groups: dict[str, list[CatalogOptionOut]]
