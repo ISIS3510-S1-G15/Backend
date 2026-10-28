@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Index, Uuid
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -164,3 +164,20 @@ class OccupancyReport(Base):
     user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
     level = Column(Integer, nullable=False)
     created_at = Column(DateTime, index=True, nullable=False)
+
+
+class SectionEvent(Base):
+    __tablename__ = "section_events"
+    __table_args__ = (
+        Index("ix_section_events_section_type_time", "section", "event_type", "client_timestamp"),
+    )
+
+    event_id = Column(Uuid, primary_key=True)
+    event_type = Column(String(32), nullable=False)
+    section = Column(String(32), nullable=False)
+    action = Column(String(48))
+    visit_id = Column(Uuid, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    client_timestamp = Column(DateTime(timezone=True), nullable=False)
+    received_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    extra = Column(JSON)

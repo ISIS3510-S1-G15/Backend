@@ -1,7 +1,10 @@
 from typing import Literal
-from pydantic import BaseModel, Field, field_validator 
+from pydantic import BaseModel, Field, field_validator, model_validator
+import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from uuid import UUID
+from app import section_catalog
 
 # ---------- BQ type 3: What categories of food or restaurants do users search for without getting any results? ----------
 #cuando Flutter mande una búsqueda nueva, solo espero que mande un texto llamado query
@@ -302,3 +305,54 @@ class OccupancyOut(BaseModel):
     level: float | None       # promedio 0-2 de los reportes recientes; None si no hay
     reports: list[int]        # niveles usados en el promedio (más nuevos primero)
     last_report_at: datetime | None
+
+
+class SectionEventIn(BaseModel):
+    event_id: UUID
+    event_type: section_catalog.SectionEventType
+    section: section_catalog.SectionName
+    action: str | None = None
+    visit_id: UUID
+    client_timestamp: datetime
+    extra: dict[str, str | int | float | bool] | None = None
+
+    @field_validator("client_timestamp")
+    @classmethod
+    def timestamp_in_accepted_window(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+        if value > now + timedelta(minutes=section_catalog.MAX_FUTURE_SKEW_MINUTES):
+            raise ValueError("client_timestamp is in the future")
+        if value < now - timedelta(days=section_catalog.MAX_EVENT_AGE_DAYS):
+            raise ValueError("client_timestamp is too old")
+        return value
+
+    @field_validator("extra")
+    @classmethod
+    def extra_is_small(cls, value):
+        if value is None:
+            return value
+        if len(value) > section_catalog.MAX_EXTRA_KEYS:
+            raise ValueError("extra has too many keys")
+        if len(json.dumps(value)) > section_catalog.MAX_EXTRA_BYTES:
+            raise ValueError("extra is too large")
+        return value
+
+    @model_validator(mode="after")
+    def action_matches_section(self):
+        if self.event_type == section_catalog.SECTION_VIEW:
+            if self.action is not None:
+                raise ValueError("section_view must not carry an action")
+        elif self.action not in section_catalog.ALLOWED_ACTIONS[self.section]:
+            raise ValueError("action is not valid for this section")
+        return self
+
+
+class SectionEventBatch(BaseModel):
+    events: list[SectionEventIn] = Field(min_length=1, max_length=section_catalog.MAX_BATCH_SIZE)
+
+
+class SectionEventsAccepted(BaseModel):
+    accepted: int
+    duplicates: int

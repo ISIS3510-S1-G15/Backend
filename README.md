@@ -112,6 +112,38 @@ Con el `.env` creado desde `.env.example`, `DATABASE_URL` ya apunta a `127.0.0.1
 - **Crear o actualizar el esquema:** `alembic upgrade head`. Es seguro repetirlo.
 - **Importar los datos históricos de SQLite (una sola vez por base):** `python -m scripts.import_sqlite campus_eats.db`. Se niega a importar si alguna tabla ya tiene filas, no borra nada, conserva ids, hashes bcrypt y fechas (UTC), ajusta las secuencias, compara fila por fila SQLite contra PostgreSQL y revisa llaves foráneas dentro de la misma transacción: cualquier discrepancia deshace todo. Con `--verify` solo compara.
 
+## Cómo se hizo la migración de SQLite a PostgreSQL
+
+1. **Respaldo** del `campus_eats.db` original antes de tocar nada (con su hash SHA-256). El archivo original no se modificó.
+2. **Diagnóstico:** 11 tablas y 70 filas en SQLite; sin violaciones de llaves foráneas. El único SQL propio de SQLite era `strftime("%Y-%W", ...)` en los reportes semanales de aperturas (`/analytics/app-opens/weekly` y `/export`); ahora el agrupado por semana se calcula en Python con el mismo formato, así que el resultado es idéntico.
+3. **Configuración:** `app/database.py` lee `DATABASE_URL`, valida que sea PostgreSQL (driver `psycopg` 3), usa `pool_pre_ping` y fija la sesión en UTC al conectar. Se eliminó la creación automática de tablas de `main.py`.
+4. **Esquema versionado con Alembic:** `0001` crea las 13 tablas, llaves, restricciones e índices; `0002` activa *row level security* sin políticas, para que la base no sea legible por la API de datos de Supabase.
+5. **Importador seguro** (`scripts/import_sqlite.py`): lee SQLite en solo lectura, exige el esquema en la última versión, se niega a importar si alguna tabla ya tiene filas, importa todo en una transacción, conserva ids, hashes bcrypt y fechas, ajusta las secuencias y compara fila por fila antes de confirmar. Cualquier discrepancia deshace todo.
+6. **Resultado verificado:** 70 de 70 filas, tanto en el PostgreSQL local como en Supabase; 0 filas huérfanas; la siguiente secuencia de `users` es 5.
+7. **Pruebas:** 29 pruebas del Backend (conexión, restricciones, autenticación, rutas protegidas, CRUD, rollback, importador, reportes) y 53 pruebas de Kotlin, incluida una de extremo a extremo contra la API real.
+
+## Rutas de la API
+
+La documentación interactiva completa está en `/docs`. "JWT" significa que requiere el encabezado `Authorization: Bearer <token>`.
+
+| Grupo | Método y ruta | Acceso |
+|---|---|---|
+| Salud | `GET /` | Pública |
+| Autenticación | `POST /auth/register`, `POST /auth/login` | Pública |
+| | `GET /auth/me` | JWT |
+| Perfil | `GET /me/profile`, `PUT /me/profile` | JWT |
+| Guardados | `GET /me/saved`, `PUT /me/saved/{restaurant_id}`, `DELETE /me/saved/{restaurant_id}` | JWT |
+| Reseñas | `GET /restaurants/{restaurant_id}/reviews`, `GET /reviews/summary` | Pública |
+| | `POST /restaurants/{restaurant_id}/reviews` | JWT |
+| Ocupación | `GET /occupancy`, `GET /occupancy/{restaurant_id}` | Pública |
+| | `POST /occupancy/reports` | JWT |
+| Analítica con usuario | `POST /analytics/app-open`, `POST /analytics/occupancy-event`, `POST /analytics/restaurant-view` | JWT |
+| Analítica anónima (registro) | `POST /analytics/zero-result-search`, `/onboarding-event`, `/filter-usage`, `/occupancy-check`, `/profile-edit` | Pública |
+| Analítica (reportes) | `GET /analytics/search-gaps`, `/onboarding-completion`, `/filter-usage`, `/occupancy-checks`, `/occupancy-check-rate`, `/profile-edits`, `/profile-edits/by-field`, `/app-opens/weekly`, `/saved-rarely-viewed` | Pública |
+| Exportación CSV | Cada reporte anterior tiene su versión en `.../export` | Pública |
+
+Las rutas, métodos, cuerpos y respuestas no cambiaron con la migración: las apps existentes funcionan sin modificarse.
+
 ## Tests (solo con la base local)
 
 Usan una base aislada `<POSTGRES_DB>_test` en el PostgreSQL local de Docker (se crea sola). Se niegan a ejecutarse si `DATABASE_URL` apunta a un servidor remoto.
