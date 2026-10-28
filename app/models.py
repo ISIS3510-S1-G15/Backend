@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Index, Uuid
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Index, Uuid, Float, Text, JSON
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -181,3 +181,38 @@ class SectionEvent(Base):
     client_timestamp = Column(DateTime(timezone=True), nullable=False)
     received_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     extra = Column(JSON)
+
+
+class Restaurant(Base):
+    __tablename__ = "restaurants"
+
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    location = Column(String, nullable=False)
+    category = Column(String, nullable=False)
+    image_key = Column(String)
+    image_url = Column(String)
+    rating = Column(Float, nullable=False)
+    review_count = Column(Integer, nullable=False)
+    price = Column(String, nullable=False)
+    wait_time = Column(String, nullable=False)
+    tags = Column(JSON, nullable=False)
+    hours = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    map_x = Column(Float, nullable=False)
+    map_y = Column(Float, nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    menu = Column(JSON, nullable=False)
+
+
+class CatalogOption(Base):
+    __tablename__ = "catalog_options"
+
+    group_key = Column(String(48), primary_key=True)
+    value = Column(String(64), primary_key=True)
+    label = Column(String, nullable=False)
+    detail = Column(String)
+    emoji = Column(String(16))
+    extra = Column(JSON)
+    sort_order = Column(Integer, nullable=False)

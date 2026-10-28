@@ -56,7 +56,7 @@ def schema():
 @pytest.fixture(autouse=True)
 def clean_tables(schema):
     assert engine.url.database.endswith("_test")
-    names = ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables)
+    names = ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables if t.name not in ("restaurants", "catalog_options"))
     with engine.begin() as conn:
         conn.exec_driver_sql(f"truncate {names} restart identity cascade")
     yield

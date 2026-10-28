@@ -148,7 +148,7 @@ def validate(conn, src_data: dict, tables, report: list) -> list:
 def run(sqlite_path: Path, verify_only: bool) -> int:
     uri = f"file:{sqlite_path.resolve().as_posix()}?mode=ro"
     src = sqlite3.connect(uri, uri=True)
-    tables = list(Base.metadata.sorted_tables)
+    tables = [t for t in Base.metadata.sorted_tables if t.name not in ("restaurants", "catalog_options")]
     report: list = []
     try:
         data = {t.name: read_sqlite(src, t) for t in tables}
