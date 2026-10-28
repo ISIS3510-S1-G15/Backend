@@ -5,6 +5,8 @@ from app.database import get_db
 from app import models, schemas
 import csv
 import io
+from collections import Counter
+from types import SimpleNamespace
 from fastapi.responses import StreamingResponse
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -349,14 +351,16 @@ def log_app_open(
     return {"saved": True}
 
 
-def _weekly_opens_summary(db: Session) -> dict:
-    # Cuántas aperturas tuvo cada usuario en cada semana del año (semana ISO aproximada con %Y-%W de SQLite)
-    week = func.strftime("%Y-%W", models.AppOpen.timestamp)
-    per_user_week = (
-        db.query(models.AppOpen.user_id, week.label("week"), func.count(models.AppOpen.id).label("opens"))
-        .group_by(models.AppOpen.user_id, week)
-        .all()
+def _opens_per_user_week(db: Session) -> list:
+    counts = Counter(
+        (user_id, timestamp.strftime("%Y-%W"))
+        for user_id, timestamp in db.query(models.AppOpen.user_id, models.AppOpen.timestamp).all()
     )
+    return [SimpleNamespace(user_id=u, week=w, opens=n) for (u, w), n in counts.items()]
+
+
+def _weekly_opens_summary(db: Session) -> dict:
+    per_user_week = _opens_per_user_week(db)
     total_opens = sum(row.opens for row in per_user_week)
     user_weeks = len(per_user_week)
     slot_rows = dict(
@@ -382,13 +386,7 @@ def get_weekly_opens(db: Session = Depends(get_db)):
 # Reporte CSV: una fila por usuario y semana (sin correos ni nombres, solo el id interno)
 @router.get("/app-opens/export")
 def export_app_opens(db: Session = Depends(get_db)):
-    week = func.strftime("%Y-%W", models.AppOpen.timestamp)
-    rows = (
-        db.query(models.AppOpen.user_id, week.label("week"), func.count(models.AppOpen.id).label("opens"))
-        .group_by(models.AppOpen.user_id, week)
-        .order_by(week)
-        .all()
-    )
+    rows = sorted(_opens_per_user_week(db), key=lambda r: r.week)
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(["user_id", "week", "opens"])

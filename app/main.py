@@ -1,9 +1,6 @@
 from fastapi import FastAPI
-from app.database import engine, Base
 from app.routers import analytics, auth, occupancy_checks, saved, profile, saved_views, reviews, occupancy
 from fastapi.middleware.cors import CORSMiddleware
-
-Base.metadata.create_all(bind=engine)  # crea las tablas si no existen
 
 app = FastAPI(title="Campus Eats API")
 app.add_middleware(
