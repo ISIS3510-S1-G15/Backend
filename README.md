@@ -112,6 +112,33 @@ Con el `.env` creado desde `.env.example`, `DATABASE_URL` ya apunta a `127.0.0.1
 - **Crear o actualizar el esquema:** `alembic upgrade head`. Es seguro repetirlo.
 - **Importar los datos históricos de SQLite (una sola vez por base):** `python -m scripts.import_sqlite campus_eats.db`. Se niega a importar si alguna tabla ya tiene filas, no borra nada, conserva ids, hashes bcrypt y fechas (UTC), ajusta las secuencias, compara fila por fila SQLite contra PostgreSQL y revisa llaves foráneas dentro de la misma transacción: cualquier discrepancia deshace todo. Con `--verify` solo compara.
 
+## Datos de demostración para las BQ
+
+`scripts/seed_demo_data.py` siembra datos coherentes para que todas las preguntas de negocio devuelvan resultados. Crea 12 usuarios `demo01@uniandes.edu.co` … `demo12@uniandes.edu.co` (contraseña `Demo1234!`) y reparte datos de las últimas 5 semanas con los mismos valores que envía la app Kotlin (restaurantes `1` a `4`, filtros, pantallas, franjas de comida y secciones).
+
+| BQ | Tablas | Qué se siembra |
+|---|---|---|
+| Aperturas por semana (tipo 1) | `app_opens` | Unas 235 aperturas, 12 usuarios, 5 semanas, las 6 franjas de comida |
+| Revisión de ocupación antes de ir (tipo 2) | `occupancy_events`, `occupancy_checks` | Revisiones y decisiones de ir, con y sin revisión previa en 30 min |
+| Filtros más usados (tipo 2) | `filter_usages` | Filtros de `home`, `search` y `map`; el más usado es "Vegan options" |
+| Onboarding completado (tipo 2) | `onboarding_events` | 40 sesiones con abandono por paso |
+| Ediciones de preferencias (tipo 3) | `profile_edits` | 8 instalaciones; campos `dietary_restrictions` y `cuisine_preferences` |
+| Búsquedas sin resultados (tipo 3) | `zero_result_searches` | 10 términos con frecuencias distintas |
+| Guardados poco vistos (tipo 3) | `saved_restaurants`, `restaurant_views` | Los restaurantes `3` y `4` casi no se reabren; el `1` sí |
+| Secciones menos usadas (tipo 3) | `section_events` | 340 visitas (mínimo 30 por sección): `filters` queda con baja interacción y `favorites` como nicho |
+
+```powershell
+venv\Scripts\python -m alembic upgrade head
+venv\Scripts\python -m scripts.seed_demo_data --dry-run
+venv\Scripts\python -m scripts.seed_demo_data
+```
+
+- Necesita el esquema en la última versión (`alembic upgrade head`).
+- Se ejecuta en una sola transacción y **se niega a repetirse** si ya existen usuarios `demo##`.
+- `--dry-run` calcula todo y no escribe nada. `--seed` y `--weeks` cambian la semilla y el periodo.
+- Los endpoints `/analytics/sections/usage` y `/analytics/sections/least-used` exigen un usuario listado en la variable de entorno `ANALYTICS_ADMIN_EMAILS` de la API (por ejemplo `demo01@uniandes.edu.co`).
+- No hay borrado automático. Las filas ligadas a usuarios demo se pueden quitar borrando esas filas y luego los usuarios; las tablas anónimas (`filter_usages`, `zero_result_searches`, `occupancy_checks`) no se pueden distinguir de datos reales, por eso conviene sembrar solo en bases de demostración.
+
 ## Cómo se hizo la migración de SQLite a PostgreSQL
 
 1. **Respaldo** del `campus_eats.db` original antes de tocar nada (con su hash SHA-256). El archivo original no se modificó.
