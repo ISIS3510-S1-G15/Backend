@@ -1,16 +1,12 @@
 # Campus Eats – Backend
 
-API en FastAPI + SQLAlchemy con **PostgreSQL alojado en Supabase**. Las apps (Kotlin y Flutter) solo hablan con la API por HTTP; nunca con la base de datos. Todo el equipo usa la misma base en la nube, así que los datos son compartidos.
+API en FastAPI + SQLAlchemy con **PostgreSQL alojado en Supabase**. La app Kotlin solo habla con la API por HTTP; nunca con la base de datos. Todo el equipo usa la misma base en la nube, así que los datos son compartidos.
 
 ```
-App Kotlin  ─┐
-             ├─ HTTP ─> API FastAPI (tu PC, puerto 8001) ─> PostgreSQL en Supabase
-App Flutter ─┘
+App Kotlin ─ HTTP ─> API FastAPI (tu PC, puerto 8001) ─> PostgreSQL en Supabase
 ```
 
-La API se ejecuta en tu computador y se conecta a Supabase con la variable `DATABASE_URL`. El esquema está versionado con Alembic y los diagramas de la base de datos están en [docs/ARQUITECTURA_BD.md](docs/ARQUITECTURA_BD.md). La documentación de todas las rutas está en `http://127.0.0.1:8001/docs` con la API corriendo.
-
-La clave de la base de datos va **adjunta a la entrega**. No está en el repositorio.
+La API se ejecuta en tu computador y se conecta a Supabase con la variable `DATABASE_URL`. La documentación de todas las rutas está en `http://127.0.0.1:8001/docs` con la API corriendo.
 
 Los comandos son para el **Símbolo del sistema (CMD)** de Windows.
 
@@ -37,10 +33,10 @@ Crea el archivo `.env` en la carpeta `Backend`:
 notepad .env
 ```
 
-Responde **Sí** si pide crearlo y pega estas líneas, reemplazando `CLAVE` por la clave adjunta a la entrega (sin espacios):
+Responde **Sí** si pide crearlo, pega estas líneas tal cual y guarda:
 
 ```
-DATABASE_URL=postgresql://postgres.rxupinvdiydqkjrrvyen:CLAVE@aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require
+DATABASE_URL=postgresql://postgres.rxupinvdiydqkjrrvyen:CampusEatsISIS3510*@aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require
 JWT_SECRET=cualquier-texto-largo-que-inventes
 ANALYTICS_ADMIN_EMAILS=demo01@uniandes.edu.co
 ```
@@ -92,19 +88,7 @@ cd /d <ruta>\App_Kotlin
 gradlew.bat :app:testDebugUnitTest --rerun
 ```
 
-## 6. App Flutter
-
-```bat
-cd /d <ruta>\App_Flutter
-flutter pub get
-flutter devices
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8001
-flutter test
-```
-
-`10.0.2.2` es el alias del computador anfitrión dentro del emulador de Android.
-
-## 7. Usuarios y datos de demostración
+## 6. Usuarios y datos de demostración
 
 La base ya tiene datos cargados para todas las preguntas de negocio. Para iniciar sesión en las apps puedes usar:
 
@@ -117,7 +101,7 @@ La base ya tiene datos cargados para todas las preguntas de negocio. Para inicia
 ## Reglas de la base compartida
 
 - No borres datos de Supabase ni ejecutes `pytest` con esta conexión (los tests se bloquean solos).
-- No subas el archivo `.env` ni compartas la clave en el repositorio, issues o capturas.
+- No subas el archivo `.env` al repositorio.
 - El plan gratuito de Supabase pausa el proyecto tras una semana sin uso: reactívalo desde su panel.
 
 ## Problemas comunes
