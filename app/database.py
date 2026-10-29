@@ -28,7 +28,14 @@ def resolve_database_url() -> str:
 
 SQLALCHEMY_DATABASE_URL = resolve_database_url()
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=5,
+    pool_recycle=1800,
+    connect_args={"connect_timeout": 10},
+)
 
 
 @event.listens_for(engine, "connect")

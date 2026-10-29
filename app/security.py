@@ -18,6 +18,8 @@ load_dotenv()  # permite definir JWT_SECRET en un archivo .env (que NO se sube a
 
 # En producción JWT_SECRET debe venir de una variable de entorno; el valor por defecto es solo para desarrollo local
 SECRET_KEY = os.getenv("JWT_SECRET", "dev-only-change-me")
+if os.getenv("RAILWAY_ENVIRONMENT") and SECRET_KEY == "dev-only-change-me":
+    raise RuntimeError("JWT_SECRET debe definirse en produccion")
 ALGORITHM = "HS256"
 TOKEN_DAYS = 7  # el usuario no tiene que volver a iniciar sesión durante una semana
 
