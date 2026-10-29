@@ -7,4 +7,4 @@ COPY . .
 RUN useradd --create-home app && chown -R app /srv
 USER app
 EXPOSE 8001
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001} --proxy-headers --forwarded-allow-ips='*'"]
