@@ -419,3 +419,28 @@ class CatalogOptionOut(BaseModel):
 
 class CatalogOut(BaseModel):
     groups: dict[str, list[CatalogOptionOut]]
+
+
+# ---------- BQ Type 5: How does a place's real-time occupancy level relate to how often users end up choosing an alternative recommended place? ----------
+class RecommendationShownCreate(BaseModel):
+    recommended_id: str
+    recommended_level: float | None = Field(default=None, ge=0, le=2)
+    alternative_id: str | None = None
+
+class RecommendationShownLogged(BaseModel):
+    saved: bool
+
+class OccupancyAlternativesByLevel(BaseModel):
+    occupancy_level: str
+    recommendations: int
+    decisions: int
+    chose_recommended: int
+    chose_suggested_alternative: int
+    chose_other_place: int
+    alternative_rate: float
+
+class OccupancyAlternativesSummary(BaseModel):
+    recommendations: int
+    decisions: int
+    alternative_rate: float
+    by_level: list[OccupancyAlternativesByLevel]
