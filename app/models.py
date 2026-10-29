@@ -91,6 +91,19 @@ class OccupancyEvent(Base):
     timestamp = Column(DateTime, index=True, nullable=False) 
     
 
+# BQ Type 5: How does a place's real-time occupancy level relate to how often users end up choosing an alternative recommended place?
+class RecommendationEvent(Base):
+    __tablename__ = "recommendation_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    recommended_id = Column(String, index=True, nullable=False)
+    recommended_level = Column(Float, nullable=True)
+    occupancy_level = Column(String, index=True, nullable=False)
+    alternative_id = Column(String, nullable=True)
+    timestamp = Column(DateTime, index=True, nullable=False)
+
+
 # BQ Type 3: What places are saved as favorites but rarely viewed in detail again?
 # Una fila cada vez que un usuario abre el detalle de un restaurante
 class RestaurantView(Base):
