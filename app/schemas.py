@@ -479,3 +479,35 @@ class PropagationBySource(PropagationStats):
 class OccupancyPropagationSummary(BaseModel):
     overall: PropagationStats
     by_source: list[PropagationBySource]
+
+
+MAX_SELECTION_MS = 24 * 60 * 60 * 1000
+
+
+class PlaceSelectionCreate(BaseModel):
+    restaurant_id: str = Field(min_length=1)
+    ms_since_app_open: int = Field(ge=0, le=MAX_SELECTION_MS)
+    meal_slot: MealSlot | None = None
+
+
+class PlaceSelectionLogged(BaseModel):
+    saved: bool
+
+
+class SelectionStats(BaseModel):
+    selections: int
+    users: int
+    avg_seconds: float | None
+    median_seconds: float | None
+    p90_seconds: float | None
+    within_1min_pct: float | None
+    within_5min_pct: float | None
+
+
+class SelectionByMealSlot(SelectionStats):
+    meal_slot: str | None
+
+
+class TimeToSelectionSummary(BaseModel):
+    overall: SelectionStats
+    by_meal_slot: list[SelectionByMealSlot]
