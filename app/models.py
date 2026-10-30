@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Index, Uuid, Float, Text, JSON
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, text
 from app.database import Base
 
 # ---------- Business Questions ----------
@@ -238,3 +238,15 @@ class CatalogOption(Base):
     emoji = Column(String(16))
     extra = Column(JSON)
     sort_order = Column(Integer, nullable=False)
+
+
+class OccupancyPropagationEvent(Base):
+    __tablename__ = "occupancy_propagation_events"
+    __table_args__ = (UniqueConstraint("user_id", "report_id", name="uq_propagation_user_report"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    report_id = Column(Integer, ForeignKey("occupancy_reports.id"), index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    source = Column(String(16), index=True, nullable=False)
+    ms_since_previous_refresh = Column(Integer, nullable=True)
+    seen_at = Column(DateTime, server_default=text("timezone('utc', now())"), nullable=False)
