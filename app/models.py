@@ -250,3 +250,14 @@ class OccupancyPropagationEvent(Base):
     source = Column(String(16), index=True, nullable=False)
     ms_since_previous_refresh = Column(Integer, nullable=True)
     seen_at = Column(DateTime, server_default=text("timezone('utc', now())"), nullable=False)
+
+
+class PlaceSelectionEvent(Base):
+    __tablename__ = "place_selection_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    restaurant_id = Column(String, index=True, nullable=False)
+    ms_since_app_open = Column(Integer, nullable=False)
+    meal_slot = Column(String(32), index=True, nullable=True)
+    received_at = Column(DateTime, server_default=text("timezone('utc', now())"), nullable=False)
