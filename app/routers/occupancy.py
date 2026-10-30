@@ -4,6 +4,7 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -39,6 +40,7 @@ def occupancy_status(db: Session, restaurant_ids: list[str] | None = None) -> di
             "restaurant_id": report.restaurant_id,
             "reports": [],
             "last_report_at": report.created_at.replace(tzinfo=timezone.utc),
+            "last_report_id": report.id,
         })
         if len(entry["reports"]) < MAX_REPORTS:
             entry["reports"].append(report.level)
@@ -49,7 +51,7 @@ def occupancy_status(db: Session, restaurant_ids: list[str] | None = None) -> di
 
 
 def _status_for(db: Session, restaurant_id: str) -> dict:
-    empty = {"restaurant_id": restaurant_id, "level": None, "reports": [], "last_report_at": None}
+    empty = {"restaurant_id": restaurant_id, "level": None, "reports": [], "last_report_at": None, "last_report_id": None}
     return occupancy_status(db, [restaurant_id]).get(restaurant_id, empty)
 
 
@@ -71,7 +73,7 @@ def create_report(
         restaurant_id=payload.restaurant_id,
         user_id=current_user.id,
         level=payload.level,
-        created_at=_now(),
+        created_at=func.timezone("UTC", func.now()),
     ))
     db.commit()
     return _status_for(db, payload.restaurant_id)

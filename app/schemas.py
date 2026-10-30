@@ -316,6 +316,7 @@ class OccupancyOut(BaseModel):
     level: float | None       # promedio 0-2 de los reportes recientes; None si no hay
     reports: list[int]        # niveles usados en el promedio (más nuevos primero)
     last_report_at: datetime | None
+    last_report_id: int | None = None
 
 
 class SectionEventIn(BaseModel):
@@ -444,3 +445,37 @@ class OccupancyAlternativesSummary(BaseModel):
     decisions: int
     alternative_rate: float
     by_level: list[OccupancyAlternativesByLevel]
+
+
+PropagationSource = Literal["tab_change", "detail_open", "detail_poll", "own_report"]
+
+
+class OccupancyPropagationCreate(BaseModel):
+    restaurant_id: str = Field(min_length=1)
+    report_id: int
+    previous_report_id: int | None = None
+    source: PropagationSource
+    ms_since_previous_refresh: int | None = Field(default=None, ge=0)
+
+
+class OccupancyPropagationLogged(BaseModel):
+    saved: int
+
+
+class PropagationStats(BaseModel):
+    updates: int
+    reports: int
+    avg_seconds: float | None
+    median_seconds: float | None
+    p90_seconds: float | None
+    within_30s_pct: float | None
+    within_5min_pct: float | None
+
+
+class PropagationBySource(PropagationStats):
+    source: str
+
+
+class OccupancyPropagationSummary(BaseModel):
+    overall: PropagationStats
+    by_source: list[PropagationBySource]
