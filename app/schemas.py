@@ -511,3 +511,10 @@ class SelectionByMealSlot(SelectionStats):
 class TimeToSelectionSummary(BaseModel):
     overall: SelectionStats
     by_meal_slot: list[SelectionByMealSlot]
+
+
+class MyTimeToSelection(BaseModel):
+    campus_avg_seconds: float | None
+    campus_selections: int
+    my_avg_seconds: float | None
+    my_selections: int
