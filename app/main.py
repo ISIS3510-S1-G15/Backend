@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import analytics, auth, occupancy_checks, saved, profile, saved_views, reviews, occupancy, section_usage, restaurants, catalog, recommendations, occupancy_propagation, place_selection
+from app.routers import analytics, auth, occupancy_checks, saved, profile, saved_views, reviews, occupancy, section_usage, restaurants, catalog, recommendations, occupancy_propagation, place_selection, partner_report
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Campus Eats API")
@@ -27,6 +27,7 @@ app.include_router(catalog.router)
 app.include_router(recommendations.router)
 app.include_router(occupancy_propagation.router)
 app.include_router(place_selection.router)
+app.include_router(partner_report.router)
 
 @app.get("/")
 def health_check():
