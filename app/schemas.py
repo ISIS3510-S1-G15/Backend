@@ -219,6 +219,7 @@ class OccupancyCheckRateSummary(BaseModel):
 # ---------- BQ Type 3: What places are saved as favorites but rarely viewed in detail again? ----------
 class RestaurantViewCreate(BaseModel):
     restaurant_id: str
+    viewed_at: datetime | None = None
 
 class RestaurantViewLogged(BaseModel):
     saved: bool
@@ -511,3 +512,21 @@ class SelectionByMealSlot(SelectionStats):
 class TimeToSelectionSummary(BaseModel):
     overall: SelectionStats
     by_meal_slot: list[SelectionByMealSlot]
+
+
+class MyTimeToSelection(BaseModel):
+    campus_avg_seconds: float | None
+    campus_selections: int
+    my_avg_seconds: float | None
+    my_selections: int
+
+
+class RecentViewItem(BaseModel):
+    restaurant_id: str
+    view_count: int
+    last_viewed_at: datetime
+
+
+class RecentViewsOut(BaseModel):
+    items: list[RecentViewItem]
+

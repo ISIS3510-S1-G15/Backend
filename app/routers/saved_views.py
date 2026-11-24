@@ -33,7 +33,13 @@ def log_restaurant_view(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    db.add(models.RestaurantView(user_id=current_user.id, restaurant_id=payload.restaurant_id))
+    view = models.RestaurantView(user_id=current_user.id, restaurant_id=payload.restaurant_id)
+    if payload.viewed_at is not None:
+        viewed_at = payload.viewed_at if payload.viewed_at.tzinfo else payload.viewed_at.replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+        if now - timedelta(days=7) <= viewed_at <= now + timedelta(minutes=5):
+            view.viewed_at = min(viewed_at, now)
+    db.add(view)
     db.commit()
     return {"saved": True}
 
