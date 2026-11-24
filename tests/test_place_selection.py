@@ -62,3 +62,16 @@ def test_does_not_touch_occupancy_events(client, make_user):
     _select(client, user, 5_000)
     assert client.get("/analytics/occupancy-check-rate").json()["go_decisions"] == 0
     assert "place_selection_events" in inspect(engine).get_table_names()
+
+
+def test_my_time_to_selection(client, make_user):
+    me, other = make_user(), make_user()
+    empty = client.get("/analytics/time-to-selection/me", headers=me["headers"]).json()
+    assert empty == {"campus_avg_seconds": None, "campus_selections": 0, "my_avg_seconds": None, "my_selections": 0}
+
+    _select(client, me, 60_000)
+    _select(client, me, 120_000)
+    _select(client, other, 300_000)
+    body = client.get("/analytics/time-to-selection/me", headers=me["headers"]).json()
+    assert body == {"campus_avg_seconds": 160.0, "campus_selections": 3, "my_avg_seconds": 90.0, "my_selections": 2}
+    assert client.get("/analytics/time-to-selection/me").status_code == 401

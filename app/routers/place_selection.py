@@ -69,6 +69,24 @@ def get_time_to_selection(db: Session = Depends(get_db)):
     }
 
 
+@router.get("/time-to-selection/me", response_model=schemas.MyTimeToSelection)
+def get_my_time_to_selection(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    campus_n, campus_avg = db.execute(select(func.count(), func.avg(SECONDS)).select_from(Event)).one()
+    my_n, my_avg = db.execute(
+        select(func.count(), func.avg(SECONDS)).select_from(Event).where(Event.user_id == current_user.id)
+    ).one()
+    rnd = lambda v: round(float(v), 1) if v is not None else None
+    return {
+        "campus_avg_seconds": rnd(campus_avg),
+        "campus_selections": campus_n,
+        "my_avg_seconds": rnd(my_avg),
+        "my_selections": my_n,
+    }
+
+
 @router.get("/time-to-selection/export")
 def export_time_to_selection(db: Session = Depends(get_db)):
     rows = db.execute(
