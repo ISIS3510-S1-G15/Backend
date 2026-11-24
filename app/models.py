@@ -113,6 +113,7 @@ class RestaurantView(Base):
     user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
     restaurant_id = Column(String, index=True, nullable=False)
     viewed_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    hidden_at = Column(DateTime(timezone=True), nullable=True)
 
 # BQ Type 5: What are the main tags restaurants have when an user decides to visit it?
 # Una fila por tag y se aumenta su contador cada que un usuario decide ir a un restaurante 
