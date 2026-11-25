@@ -107,3 +107,19 @@ def create_review(
     db.commit()
     db.refresh(review)
     return _review_out(review, current_user.name)
+
+# Reseñas escritas por el usuario (mas recientes primero)
+@router.get("/me/reviews", response_model=list[schemas.ReviewOut])
+def get_my_reviews(
+    limit: int = Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    rows = (
+        db.query(models.Review)
+        .filter(models.Review.user_id == current_user.id)
+        .order_by(models.Review.created_at.desc(), models.Review.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return [_review_out(r, current_user.name) for r in rows]
