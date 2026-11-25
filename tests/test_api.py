@@ -148,3 +148,27 @@ def test_restaurant_view_flow(client, make_user):
     assert client.post("/analytics/restaurant-view", json={"restaurant_id": "r1"}, headers=user["headers"]).status_code == 200
     summary = client.get("/analytics/saved-rarely-viewed").json()
     assert summary["saves_analyzed"] == 1
+
+
+def test_saved_rarely_viewed_only_counts_views_inside_the_window(client, make_user, db):
+    from datetime import datetime, timedelta, timezone
+    from app import models
+
+    user = make_user()
+    client.put("/me/saved/r1", headers=user["headers"])
+    saved = db.get(models.SavedRestaurant, (user["id"], "r1"))
+    saved_at = datetime.now(timezone.utc) - timedelta(days=30)
+    saved.saved_at = saved_at
+    db.add(models.RestaurantView(user_id=user["id"], restaurant_id="r1", viewed_at=saved_at + timedelta(days=2)))
+    db.add(models.RestaurantView(user_id=user["id"], restaurant_id="r1", viewed_at=saved_at + timedelta(days=3)))
+    db.add(models.RestaurantView(user_id=user["id"], restaurant_id="r1", viewed_at=saved_at + timedelta(days=20)))
+    db.commit()
+
+    two_weeks = client.get("/analytics/saved-rarely-viewed").json()
+    assert two_weeks["window_days"] == 14
+    assert two_weeks["places"][0]["avg_views_after_saving"] == 2.0
+    assert two_weeks["rarely_viewed"] == 0
+
+    one_day = client.get("/analytics/saved-rarely-viewed", params={"window_days": 1}).json()
+    assert one_day["places"][0]["avg_views_after_saving"] == 0.0
+    assert one_day["rarely_viewed"] == 1

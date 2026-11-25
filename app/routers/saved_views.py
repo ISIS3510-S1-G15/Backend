@@ -44,9 +44,10 @@ def log_restaurant_view(
     return {"saved": True}
 
 
-def _saves_with_views(db: Session, min_days_saved: int) -> list[dict]:
+def _saves_with_views(db: Session, min_days_saved: int, window_days: int) -> list[dict]:
     # Cada guardado (usuario, restaurante) con cuántas veces ese usuario abrió el detalle después de guardarlo
     cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=min_days_saved)
+    window = timedelta(days=window_days)
     views = defaultdict(list)  # (usuario, restaurante) -> horas de sus vistas
     for v in db.query(models.RestaurantView).all():
         views[(v.user_id, v.restaurant_id)].append(_naive_utc(v.viewed_at))
@@ -56,7 +57,7 @@ def _saves_with_views(db: Session, min_days_saved: int) -> list[dict]:
         saved_at = _naive_utc(s.saved_at)
         if saved_at > cutoff:
             continue  # guardado muy reciente: todavía no tuvo tiempo de volver a verlo
-        after = sum(1 for t in views[(s.user_id, s.restaurant_id)] if t > saved_at)
+        after = sum(1 for t in views[(s.user_id, s.restaurant_id)] if saved_at < t <= saved_at + window)
         result.append({"user_id": s.user_id, "restaurant_id": s.restaurant_id,
                        "saved_at": saved_at, "views_after_saving": after})
     return result
@@ -66,9 +67,10 @@ def _saves_with_views(db: Session, min_days_saved: int) -> list[dict]:
 def get_saved_rarely_viewed(
     max_views: int = Query(1, ge=0, description="'Rarely' = esta cantidad de vistas o menos después de guardar"),
     min_days_saved: int = Query(0, ge=0, description="Ignora guardados más nuevos que esto (en días)"),
+    window_days: int = Query(14, ge=1, le=365, description="Solo cuentan las vistas de los primeros N días después de guardar"),
     db: Session = Depends(get_db),
 ):
-    saves = _saves_with_views(db, min_days_saved)
+    saves = _saves_with_views(db, min_days_saved, window_days)
     per_place = defaultdict(list)
     for s in saves:
         per_place[s["restaurant_id"]].append(s["views_after_saving"])
@@ -89,6 +91,7 @@ def get_saved_rarely_viewed(
     return {
         "max_views": max_views,
         "min_days_saved": min_days_saved,
+        "window_days": window_days,
         "saves_analyzed": len(saves),
         "rarely_viewed": total_rarely,
         "rarely_viewed_pct": round(total_rarely * 100 / len(saves), 1) if saves else 0.0,
@@ -98,11 +101,15 @@ def get_saved_rarely_viewed(
 
 # Versión CSV: una fila por guardado, con cuántas veces se volvió a ver
 @router.get("/saved-rarely-viewed/export")
-def export_saved_rarely_viewed(min_days_saved: int = Query(0, ge=0), db: Session = Depends(get_db)):
+def export_saved_rarely_viewed(
+    min_days_saved: int = Query(0, ge=0),
+    window_days: int = Query(14, ge=1, le=365),
+    db: Session = Depends(get_db),
+):
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(["restaurant_id", "user_id", "saved_at_utc", "views_after_saving"])  # header row
-    for s in _saves_with_views(db, min_days_saved):
+    for s in _saves_with_views(db, min_days_saved, window_days):
         writer.writerow([s["restaurant_id"], s["user_id"], s["saved_at"].isoformat(), s["views_after_saving"]])
     output.seek(0)
 

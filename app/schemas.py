@@ -234,6 +234,7 @@ class SavedRarelyViewedPlace(BaseModel):
 class SavedRarelyViewedSummary(BaseModel):
     max_views: int                # "rarely" = esta cantidad de vistas o menos después de guardar
     min_days_saved: int           # solo cuentan guardados con al menos estos días de antigüedad
+    window_days: int              # solo cuentan las vistas de los primeros N días después de guardar
     saves_analyzed: int
     rarely_viewed: int
     rarely_viewed_pct: float      # respuesta general de la BQ
