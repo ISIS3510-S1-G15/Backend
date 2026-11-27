@@ -232,3 +232,18 @@ def test_existing_data_untouched_and_old_endpoints_work(client, make_user):
     assert client.get("/").status_code == 200
     assert client.get("/analytics/filter-usage").status_code == 200
     assert client.get("/auth/me", headers=user["headers"]).status_code == 200
+
+
+def test_auth_me_flags_only_the_analytics_admin(client, admin, make_user):
+    regular = make_user()
+    assert client.get("/auth/me", headers=admin["headers"]).json()["is_analytics_admin"] is True
+    assert client.get("/auth/me", headers=regular["headers"]).json()["is_analytics_admin"] is False
+
+
+def test_login_response_flags_the_analytics_admin(client, monkeypatch):
+    email = "boss@uniandes.edu.co"
+    monkeypatch.setenv("ANALYTICS_ADMIN_EMAILS", email)
+    registered = client.post("/auth/register", json={"name": "Boss", "email": email, "password": "Password1!"})
+    assert registered.json()["user"]["is_analytics_admin"] is True
+    logged = client.post("/auth/login", json={"email": email, "password": "Password1!"})
+    assert logged.json()["user"]["is_analytics_admin"] is True

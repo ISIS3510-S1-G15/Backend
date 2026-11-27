@@ -13,13 +13,17 @@ from app.security import get_current_user
 router = APIRouter(prefix="/analytics/sections", tags=["section-usage"])
 
 
-def require_analytics_admin(user: models.User = Depends(get_current_user)) -> models.User:
+def is_analytics_admin_email(email: str) -> bool:
     allowed = {
-        email.strip().lower()
-        for email in os.environ.get("ANALYTICS_ADMIN_EMAILS", "").split(",")
-        if email.strip()
+        item.strip().lower()
+        for item in os.environ.get("ANALYTICS_ADMIN_EMAILS", "").split(",")
+        if item.strip()
     }
-    if user.email.lower() not in allowed:
+    return email.lower() in allowed
+
+
+def require_analytics_admin(user: models.User = Depends(get_current_user)) -> models.User:
+    if not is_analytics_admin_email(user.email):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Analytics access denied")
     return user
 
