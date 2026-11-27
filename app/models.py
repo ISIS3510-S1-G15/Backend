@@ -261,4 +261,5 @@ class PlaceSelectionEvent(Base):
     restaurant_id = Column(String, index=True, nullable=False)
     ms_since_app_open = Column(Integer, nullable=False)
     meal_slot = Column(String(32), index=True, nullable=True)
+    source = Column(String(16), index=True, nullable=True)  # 'detail' | 'quick_pick'; NULL = before Sprint 4 (= detail)
     received_at = Column(DateTime, server_default=text("timezone('utc', now())"), nullable=False)
