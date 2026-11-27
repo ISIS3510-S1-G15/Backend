@@ -485,12 +485,16 @@ class OccupancyPropagationSummary(BaseModel):
 
 
 MAX_SELECTION_MS = 24 * 60 * 60 * 1000
+# Where the "Get directions" tap came from: the restaurant detail (unaided) or the Quick Pick shortcut.
+SelectionSource = Literal["detail", "quick_pick"]
 
 
 class PlaceSelectionCreate(BaseModel):
     restaurant_id: str = Field(min_length=1)
     ms_since_app_open: int = Field(ge=0, le=MAX_SELECTION_MS)
     meal_slot: MealSlot | None = None
+    # Defaults to "detail" so older clients and offline-queued events keep working.
+    source: SelectionSource = "detail"
 
 
 class PlaceSelectionLogged(BaseModel):
@@ -521,6 +525,25 @@ class MyTimeToSelection(BaseModel):
     campus_selections: int
     my_avg_seconds: float | None
     my_selections: int
+
+
+class QuickPickOut(BaseModel):
+    meal_slot: MealSlot
+    kind: Literal["your_usual", "campus_favorite"] | None  # None = the app shows nothing
+    candidates: list[str]  # restaurant ids, best first; the app picks the first one open now
+    times_chosen: int
+    my_avg_seconds: float | None
+    campus_avg_seconds: float | None
+    my_selections: int
+
+
+class SelectionBySource(SelectionStats):
+    source: SelectionSource
+
+
+class TimeToSelectionBySource(BaseModel):
+    by_source: list[SelectionBySource]
+    quick_pick_share_pct: float | None
 
 
 class RecentViewItem(BaseModel):

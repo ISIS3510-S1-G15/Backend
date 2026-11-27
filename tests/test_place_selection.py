@@ -44,7 +44,7 @@ def test_summary_and_export(client, make_user):
     export = client.get("/analytics/time-to-selection/export")
     assert export.status_code == 200
     lines = export.text.strip().splitlines()
-    assert lines[0] == "user_id,restaurant_id,meal_slot,seconds_since_app_open,received_at_utc"
+    assert lines[0] == "user_id,restaurant_id,meal_slot,seconds_since_app_open,received_at_utc,source"
     assert len(lines) == 4
     assert f"{first['id']},r1,Lunch,30.0," in export.text
 
