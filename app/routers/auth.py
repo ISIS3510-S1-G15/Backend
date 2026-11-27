@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
+from app.routers.section_usage import is_analytics_admin_email
 from app.security import create_access_token, get_current_user, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -12,8 +13,17 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 ALLOWED_DOMAIN = "@uniandes.edu.co"
 
 
+def _user_out(user: models.User) -> dict:
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "is_analytics_admin": is_analytics_admin_email(user.email),
+    }
+
+
 def _token_response(user: models.User) -> dict:
-    return {"access_token": create_access_token(user.id), "token_type": "bearer", "user": user}
+    return {"access_token": create_access_token(user.id), "token_type": "bearer", "user": _user_out(user)}
 
 
 # Crea la cuenta y deja al usuario con la sesión iniciada (devuelve el token de una vez)
@@ -44,4 +54,4 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
 # La app lo llama al arrancar para saber si el token guardado sigue siendo válido
 @router.get("/me", response_model=schemas.UserOut)
 def me(current_user: models.User = Depends(get_current_user)):
-    return current_user
+    return _user_out(current_user)

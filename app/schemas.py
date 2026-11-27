@@ -158,6 +158,7 @@ class UserOut(BaseModel):
     id: int
     name: str
     email: str
+    is_analytics_admin: bool = False
 
     class Config:
         from_attributes = True
