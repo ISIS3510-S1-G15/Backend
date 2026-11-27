@@ -4,7 +4,7 @@ def _img(photo_id: str) -> str:
 
 LOGO_EL_CARNAL = "https://elcarnal.co/og-el-carnal-logo-20260617.png"
 LOGO_WOK = "https://www.wok.com.co/hubfs/wok%20logo.png"
-LOGO_PIZZA_HUT = "https://commons.wikimedia.org/wiki/Special:FilePath/Pizza_Hut_logo.svg?width=800"
+LOGO_PIZZA_HUT = "https://www.fooddeliverybrands.com/wp-content/uploads/2021/05/logoph-1.png"
 
 _LOCATION = "City U – Plazoleta de comidas"
 
